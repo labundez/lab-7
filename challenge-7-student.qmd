@@ -113,8 +113,9 @@ fish <- fish |>
 ggplot(fish, aes(x = year, y = condition_index, fill = species)) +
   geom_bar(stat = "identity", position = "stack") +  
   labs(x = "Year",
-       y = "Condition Index",
-       subtitle = "Condition Index by Species Over Time",
+       y = NULL,
+       subtitle = "Condition Index",
+       title = "Condition Index by Species Over Time",
        fill = "Species") +
   theme_minimal()
 
