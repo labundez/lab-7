@@ -261,6 +261,8 @@ rescale_column <- function(df, var_names) {
 }
 ```
 
+Looked into this website (https://cran.r-project.org/web/packages/rlang/rlang.pdf) to look at different rlang functions.
+
 **9. Use your `rescale_column()` function to rescale *both* the `length` and `weight` columns.**
 
 ::: callout-warning
