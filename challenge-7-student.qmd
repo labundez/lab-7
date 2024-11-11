@@ -55,6 +55,8 @@ If you are struggling with the structure of your function, I would suggest readi
 ```{r}
 #| label: function-to-change-impossible-measurements-to-NA
 
+library(dplyr)
+
 unlikely <- function(x, min, max) {
   dplyr::case_when(
     x < min ~ NA,  
@@ -103,16 +105,17 @@ condition_index <- function(weight, length) {
 ```{r}
 #| label: condition-indices-over-time
 
-summarized_fish <- fish |>
-  group_by(year, species) |>
-  summarise(total_condition_index = sum(condition_index, na.rm = TRUE), .groups = 'drop')
+library(ggplot2)
 
+fish <- fish |>
+  mutate(condition_index = condition_index(length, weight)) 
 
-ggplot(summarized_fish, aes(x = year, y = total_condition_index, fill = species)) +
-  geom_bar(stat = "identity", position = "stack") +
+ggplot(fish, aes(x = year, y = condition_index, fill = species)) +
+  geom_bar(stat = "identity", position = "stack") +  
   labs(x = "Year",
-       y = "Total Condition Index",
-       subtitle = "Fish Condition Index by Species Over Time",
+       y = "Condition Index",
+       subtitle = "Condition Index by Species Over Time",
        fill = "Species") +
   theme_minimal()
+
 ```
