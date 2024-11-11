@@ -1,9 +1,15 @@
 ---
 title: "Lab 7: Functions + Fish"
-author: "Your name here!"
+author: "Lisette Abundez"
 format: html
 editor: source
 embed-resources: true
+code-tools: true
+code-fold: true
+execute: 
+  message: false
+  warning: false
+  echo: true
 ---
 
 The goal of this lab is learn more about exploring missing data and writing
@@ -11,8 +17,10 @@ modular code.
 
 ```{r}
 #| label: setup
+library(here)
+library(tidyverse)
 
-
+fish <- read_csv(here("data", "BlackfootFish.csv"))
 ```
 
 ## The Data
@@ -45,12 +53,42 @@ measurement errors.
 ```{r}
 #| label: find-missing-values
 
+library(dplyr)
+
+missing <- fish |>
+    filter(rowSums(across(everything(), ~ is.na(.))) > 0) 
+
 ```
+
 
 **2. Create ONE thoughtful visualization that explores the frequency of missing values across the different years, sections, and trips.**
 
 ```{r}
 #| label: visual-of-missing-values-over-time
+
+library(ggplot2)
+
+frequency_missing <- fish |>
+    group_by(year, section, trip) |>
+    summarize(frequency = n(), .groups = 'drop')
+
+trip_names <- c('1' = "Trip 1", '2' = "Trip 2")
+
+ggplot(frequency_missing, 
+       aes(x = year, y = frequency, color = section)) +
+    geom_line(linewidth = 0.5) +
+    facet_wrap(~ trip, labeller = labeller(trip = trip_names)) +
+    labs(
+        title = "Frequency of Missing Values in Fish Data by Year, Section, and Trip",
+        x = "Year",
+        y = NULL,
+        subtitle = "Frequency of Missing Values",
+        color = "Section"
+    ) +
+  theme(
+        strip.text = element_text(size = 12),
+        aspect.ratio = 1
+    )
 
 ```
 
@@ -83,7 +121,7 @@ This process of duplicating an action multiple times can make it difficult to
 understand the intent of the process. *Additionally, it can make it very difficult to spot mistakes.*
 
 **3. What is the mistake I made in the above rescaling code?**
-
+The formula for rescaling weight uses the minimum value of length, instead of the minimum value of weight!
 
 When you find yourself copy-pasting lines of code, it's time to write a
 function, instead!
@@ -96,6 +134,17 @@ function, instead!
 ```{r}
 #| label: write-rescale-function
 
+rescale_01 <- function(x) {
+  if (!is.numeric(x)) {
+    stop("Input vector must be numeric.")
+  }
+ 
+  if (length(x) <= 1) {
+    stop("Input vector must have more than one element.")
+  }
+   range_values <- range(x, na.rm = TRUE)
+  (x - range_values[1]) / (range_values[2] - range_values[1])
+}
 ```
 
 ::: callout-tip
@@ -141,16 +190,33 @@ This will require you to call your `rescale_01()` function within a `mutate()`
 statement in order to create a `length_scaled` variable.
 :::
 
+
 ```{r}
+#| echo: true
 #| label: compare-original-with-rescaled-lengths
+#| layout-ncol: 2
+#| fig-cap: 
+#|   - "Original Values of Fish Length (mm)"
+#|   - "Rescaled Values of Fish Length (Scale: 0 - 1)"
+#| fig-align: center
+
+fish <- fish |>
+  mutate(length_scaled = rescale_01(length))
 
 fish |>  
   ggplot(aes(x = length)) + 
   geom_histogram(binwidth = 45) +
-  labs(x = "Original Values of Fish Length (mm)") +
+  labs(x = "Original Values of Fish Length (mm)",
+       y = "Frequency") +
   scale_y_continuous(limits = c(0,4000))
 
 # Code for Q7 plot.
+fish |>
+  ggplot(aes(x = length_scaled)) + 
+  geom_histogram(binwidth = 0.05) +  
+  labs(x = "Rescaled Values of Fish Length (Scale: 0 - 1)",
+        y = "Frequency") +
+  scale_y_continuous(limits = c(0, 4000)) 
 
 ```
 
@@ -184,6 +250,15 @@ section of R for Data Science!
 ```{r}
 #| label: rescale-data-frame-function
 
+rescale_column <- function(df, var_names) {
+  df |> 
+    dplyr::mutate(
+      dplyr::across(
+        {{ var_names }},  
+        rescale_01        
+      )
+    )
+}
 ```
 
 **9. Use your `rescale_column()` function to rescale *both* the `length` and `weight` columns.**
@@ -194,5 +269,5 @@ I expect that you carry out this process by calling the `rescale_column()` funct
 
 ```{r}
 #| label: rescale-two-columns
-
+rescale_column(fish, c(weight, length))
 ```
